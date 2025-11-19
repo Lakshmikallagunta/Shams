@@ -29,10 +29,12 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-// Configure CORS for Render deployment
+// Configure CORS for multiple deployment environments
 const allowedOrigins = [
   'http://localhost:3000',
   'https://shams-2.onrender.com',
+  'https://shams.vercel.app',
+  'https://*.vercel.app',
   process.env.CLIENT_URL
 ].filter(Boolean);
 
@@ -59,7 +61,17 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
+    // Check if origin matches any allowed pattern
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin.includes('*')) {
+        // Handle wildcard patterns
+        const regex = new RegExp(allowedOrigin.replace('*', '.*'));
+        return regex.test(origin);
+      }
+      return allowedOrigin === origin;
+    });
+    
+    if (!isAllowed) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
