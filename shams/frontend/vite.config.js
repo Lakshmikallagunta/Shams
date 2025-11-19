@@ -11,5 +11,17 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
-  }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  define: {
+    'import.meta.env.PROD': JSON.stringify(process.env.NODE_ENV === 'production'),
+  },
 })

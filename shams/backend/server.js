@@ -28,9 +28,17 @@ import adminHostelRoutes from './routes/adminHostelRoutes.js';
 dotenv.config();
 const app = express();
 const httpServer = createServer(app);
+
+// Configure CORS for Render deployment
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://shams-2.onrender.com',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || '*',
+    origin: allowedOrigins,
     credentials: true
   }
 });
@@ -46,7 +54,19 @@ connectDB().then(() => {
   console.log('Continuing to start server without database connection...');
 });
 
-app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
+app.use(cors({ 
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true 
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
