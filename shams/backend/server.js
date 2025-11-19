@@ -51,11 +51,11 @@ app.set('io', io);
 // Connect to database with error handling
 let dbConnected = false;
 connectDB().then(() => {
-  console.log('Database connected successfully');
+  console.log('✅ Database connected successfully');
   dbConnected = true;
 }).catch(err => {
-  console.error('Database connection failed:', err.message);
-  console.log('Continuing to start server without database connection...');
+  console.error('❌ Database connection failed:', err.message);
+  console.log('⚠️  Server will start without database connection - some features may not work');
   dbConnected = false;
 });
 
@@ -142,9 +142,14 @@ io.on('connection', (socket) => {
 cron.schedule('1 0 * * *', async () => {
   console.log('🕐 Running auto-attendance job...');
   try {
-    const result = await autoMarkLeaveAttendance();
-    if (result.success) {
-      console.log(`✅ Auto-attendance completed: ${result.count} students marked`);
+    // Only run if database is connected
+    if (dbConnected) {
+      const result = await autoMarkLeaveAttendance();
+      if (result.success) {
+        console.log(`✅ Auto-attendance completed: ${result.count} students marked`);
+      }
+    } else {
+      console.log('⚠️  Skipping auto-attendance - database not connected');
     }
   } catch (error) {
     console.error('❌ Auto-attendance failed:', error.message);
@@ -155,11 +160,16 @@ cron.schedule('1 0 * * *', async () => {
 setTimeout(async () => {
   console.log('🔄 Running initial auto-attendance check...');
   try {
-    await autoMarkLeaveAttendance();
+    // Only run if database is connected
+    if (dbConnected) {
+      await autoMarkLeaveAttendance();
+    } else {
+      console.log('⚠️  Skipping initial auto-attendance - database not connected');
+    }
   } catch (error) {
     console.error('❌ Initial auto-attendance failed:', error.message);
   }
 }, 5000);
 
 const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => console.log(`SHAMS API on :${PORT} with Socket.io enabled`));
+httpServer.listen(PORT, () => console.log(`✅ SHAMS API on :${PORT} with Socket.io enabled`));
