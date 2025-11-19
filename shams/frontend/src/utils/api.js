@@ -9,6 +9,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
 
 api.interceptors.request.use((config) => {
@@ -18,5 +19,23 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout - server might be down');
+      return Promise.reject(new Error('Connection timeout - please try again later'));
+    }
+    
+    if (!error.response) {
+      console.error('Network error - server might be unreachable');
+      return Promise.reject(new Error('Network error - please check your connection'));
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 export default api;

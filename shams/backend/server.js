@@ -49,11 +49,14 @@ const io = new Server(httpServer, {
 app.set('io', io);
 
 // Connect to database with error handling
+let dbConnected = false;
 connectDB().then(() => {
   console.log('Database connected successfully');
+  dbConnected = true;
 }).catch(err => {
   console.error('Database connection failed:', err.message);
   console.log('Continuing to start server without database connection...');
+  dbConnected = false;
 });
 
 app.use(cors({ 
@@ -83,6 +86,15 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
 
+// Health check endpoint that also shows database status
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    ok: true, 
+    timestamp: new Date().toISOString(),
+    database: dbConnected ? 'connected' : 'disconnected'
+  });
+});
+
 // Serve static files from the React app build directory in production
 if (process.env.NODE_ENV === 'production') {
   const __dirname = path.resolve();
@@ -93,8 +105,6 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
   });
 }
-
-app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
@@ -109,7 +119,10 @@ app.use('/api/password', passwordRoutes);
 // For development, we'll handle the root route to show API status
 if (process.env.NODE_ENV !== 'production') {
   app.get('/', (req, res) => {
-    res.json({ message: 'SHAMS API Server Running' });
+    res.json({ 
+      message: 'SHAMS API Server Running',
+      database: dbConnected ? 'connected' : 'disconnected'
+    });
   });
 }
 
