@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: shams-backend
+    env: node
+    plan: free
+    rootDir: shams/backend
+    buildCommand: npm install
+    startCommand: npm run production
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ATLAS_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLIENT_URL
+        value: https://shams-frontend.onrender.com
+
+  - type: web
+    name: shams-frontend
+    env: static
+    rootDir: shams/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_ENV
+        value: production
