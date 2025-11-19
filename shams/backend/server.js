@@ -8,6 +8,12 @@ import cron from 'node-cron';
 import { connectDB } from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import { autoMarkLeaveAttendance } from './services/autoAttendanceService.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import authRoutes from './routes/authRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
@@ -32,12 +38,29 @@ const io = new Server(httpServer, {
 // Make io accessible to routes
 app.set('io', io);
 
-await connectDB();
+// Connect to database with error handling
+connectDB().then(() => {
+  console.log('Database connected successfully');
+}).catch(err => {
+  console.error('Database connection failed:', err.message);
+  console.log('Continuing to start server without database connection...');
+});
 
 app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
+
+// Serve static files from the React app build directory in production
+if (process.env.NODE_ENV === 'production') {
+  const __dirname = path.resolve();
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  });
+}
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
@@ -50,6 +73,13 @@ app.use('/api/admin', adminHostelRoutes);
 app.use('/api/mess', messRoutes);
 app.use('/api/student-return', studentReturnRoutes);
 app.use('/api/password', passwordRoutes);
+
+// For development, we'll handle the root route to show API status
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/', (req, res) => {
+    res.json({ message: 'SHAMS API Server Running' });
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);
@@ -66,16 +96,24 @@ io.on('connection', (socket) => {
 // Auto-attendance cron job - runs daily at 12:01 AM
 cron.schedule('1 0 * * *', async () => {
   console.log('🕐 Running auto-attendance job...');
-  const result = await autoMarkLeaveAttendance();
-  if (result.success) {
-    console.log(`✅ Auto-attendance completed: ${result.count} students marked`);
+  try {
+    const result = await autoMarkLeaveAttendance();
+    if (result.success) {
+      console.log(`✅ Auto-attendance completed: ${result.count} students marked`);
+    }
+  } catch (error) {
+    console.error('❌ Auto-attendance failed:', error.message);
   }
 });
 
 // Manual trigger for testing (run on server start)
 setTimeout(async () => {
   console.log('🔄 Running initial auto-attendance check...');
-  await autoMarkLeaveAttendance();
+  try {
+    await autoMarkLeaveAttendance();
+  } catch (error) {
+    console.error('❌ Initial auto-attendance failed:', error.message);
+  }
 }, 5000);
 
 const PORT = process.env.PORT || 5000;

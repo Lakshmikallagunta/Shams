@@ -8,6 +8,8 @@ export const connectDB = async () => {
   await mongoose.connect(uri, {
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
+    tlsInsecure: false,
+    serverApi: { version: '1', strict: true, deprecationErrors: true }
   });
   
   console.log(`MongoDB Atlas connected: ${mongoose.connection.host}`);

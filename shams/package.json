@@ -1,6 +1,27 @@
 {
-  "dependencies": {
-    "dotenv": "^17.2.3",
-    "mongoose": "^8.19.3"
+  "name": "shams-hostel-management-system",
+  "version": "1.0.0",
+  "description": "A comprehensive hostel management system with role-based access for Admin, Warden, and Student",
+  "main": "deploy.js",
+  "type": "module",
+  "scripts": {
+    "start": "node deploy.js",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix frontend",
+    "deploy": "node deploy.js"
+  },
+  "keywords": [
+    "hostel",
+    "management",
+    "system",
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "SHAMS Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.0.0"
   }
 }
